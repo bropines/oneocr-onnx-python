@@ -1,0 +1,11 @@
+# Core pipeline dependencies
+onnxruntime>=1.16.0
+numpy>=1.20.0
+Pillow>=9.0.0
+
+# Store download script dependencies
+requests>=2.28.0
+packaging>=23.0
+
+# Memory dump & extraction script dependencies
+onnx>=1.14.0

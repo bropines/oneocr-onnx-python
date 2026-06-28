@@ -1,0 +1,48 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env/
+
+# uv
+.uv/
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# OneOCR: extracted models and binaries (large, machine-local)
+bin/
+models/
+
+# Generated test masks
+tests/mask_*.png
+
+# Temporary scratch files
+*.tmp
+*.log
+
+# Test images (machine-local, not versioned)
+tests/*.png
+tests/*.jpg
+tests/*.jpeg
+tests/*.webp
+tests/*.bmp
