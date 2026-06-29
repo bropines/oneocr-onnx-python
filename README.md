@@ -1,7 +1,6 @@
-# OneOCR Deobfuscated
+# OneOCR ONNX Python
 
-Decrypted ONNX models and a clean, modular Python package extracted from the
-**Windows 11 Snipping Tool** OCR engine (`oneocr.onemodel`).
+A clean, modular Python runtime pipeline and wrapper for the **Windows 11 Snipping Tool** OCR engine (`oneocr.onemodel`).
 
 > **Note**: The DLL binaries and model files are Microsoft intellectual property.  
 > This repository contains only the extraction tooling — the binaries are fetched
