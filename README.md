@@ -20,6 +20,10 @@ python tests/test_real_image.py path/to/screenshot.png
 
 For detailed documentation on configuration, hardware acceleration, and the full Python class interface, see [api.md](api.md).
 
+> [!IMPORTANT]
+> **Platform Requirements**:
+> * **Preparation & Decryption**: The extraction and decryption step (`prepare_files.py`) utilizes Windows APIs and native DLLs, meaning it **must be run on a Windows machine**.
+> * **OCR Engine & Inference**: Once the sub-models are extracted into the `models/` folder, they are standard platform-independent ONNX files. The core `oneocr` Python package runs on **Windows, macOS, Linux, and Docker** using only standard Python libraries and `onnxruntime`.
 
 Or use the library directly in your own code:
 

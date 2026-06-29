@@ -2,6 +2,11 @@
 
 This document outlines the Python API for the `oneocr` library and describes how to configure different hardware acceleration backends (CPU, NVIDIA GPU/CUDA, AMD/Intel/NVIDIA DirectML, etc.) using ONNX Runtime.
 
+> [!IMPORTANT]
+> **Platform Requirements**:
+> * **Preparation & Decryption** (`prepare()`, `download_and_extract()`, `decrypt_and_extract()`): Must be executed on a **Windows** system because they call Windows APIs and execute native `.dll` binaries.
+> * **OCR Engine & Inference** (`OneOCR`): Once the sub-models are extracted into the `models/` folder, they are standard ONNX networks. The main `OneOCR` engine runs on **Windows, macOS, Linux, and Docker** without any OS-specific dependencies.
+
 ---
 
 ## 1. Installation Requirements
