@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 __pycache__/
 *.py[cod]
 *.pyo
@@ -32,6 +32,7 @@ desktop.ini
 # OneOCR: extracted models and binaries (large, machine-local)
 bin/
 models/
+vocab_buffers/
 
 # Generated test masks
 tests/mask_*.png

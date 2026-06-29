@@ -85,8 +85,8 @@ def download_file(url, output_path):
 
 def extract_oneocr_files(bundle_path, target_arch="x64", output_dir=None):
     if output_dir is None:
-        # Default to a local 'bin' directory inside tmp/OneOCR_Deobfuscated
-        output_dir = os.path.join(os.getcwd(), 'tmp', 'OneOCR_Deobfuscated', 'bin')
+        # Default to a local 'bin' directory in the project root
+        output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bin')
         
     os.makedirs(output_dir, exist_ok=True)
     print(f"Extraction directory: {output_dir}")

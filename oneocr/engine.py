@@ -14,7 +14,13 @@ from .corrector import OrientationCorrector
 
 class OneOCR:
     """The main drop-in replacement OneOCR orchestrator engine class."""
-    def __init__(self, config_dir: Optional[str | Path] = None, max_lines: int = 1000, use_gpu: bool = False):
+    def __init__(
+        self,
+        config_dir: Optional[str | Path] = None,
+        max_lines: int = 1000,
+        use_gpu: bool = False,
+        providers: Optional[list[str]] = None,
+    ):
         # Resolve config/models directory path
         candidates = []
         if config_dir is not None:
@@ -39,7 +45,9 @@ class OneOCR:
         self.max_lines = max_lines
         
         # Configure providers
-        if use_gpu:
+        if providers is not None:
+            self.providers = providers
+        elif use_gpu:
             available = ort.get_available_providers()
             gpu_providers = []
             if "CUDAExecutionProvider" in available:

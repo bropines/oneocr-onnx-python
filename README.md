@@ -12,15 +12,15 @@ Decrypted ONNX models and a clean, modular Python package extracted from the
 ## Quick Start
 
 ```bash
-# 1. Download the latest Snipping Tool and extract binaries to bin/
-python download_and_extract_oneocr.py
+# 1. Run the automated script to download, extract, decrypt, and organize everything:
+python prepare_files.py
 
-# 2. Decrypt, extract CJK/Cyrillic/Latin vocabularies, and organize ONNX models
-python extract_all.py
-
-# 3. Run OCR on any image using the pure Python/ONNX pipeline
-python test_real_image.py path/to/screenshot.png
+# 2. Run OCR on any image using the pure Python/ONNX pipeline:
+python tests/test_real_image.py path/to/screenshot.png
 ```
+
+For detailed documentation on configuration, hardware acceleration, and the full Python class interface, see [api.md](api.md).
+
 
 Or use the library directly in your own code:
 
@@ -197,4 +197,12 @@ This technique requires no manual disassembly and works against future updates.
 - [b1tg's Research Post on Win11 OneOCR](https://b1tg.github.io/post/win11-oneocr) — Detailed reverse engineering writeup of the OneOCR DLL engine.
 - [b1tg's win11-oneocr Repository](https://github.com/b1tg/win11-oneocr) — Original C++ proof-of-concept DLL hooking and extraction codebase.
 - [AuroraWright's oneocr Wrapper](https://github.com/AuroraWright/oneocr) — Python-based OneOCR pipeline loader and model wrapper.
+
+---
+
+## License & Legal Disclaimer
+
+* **Software License**: The Python codebase, scripts, and documentation in this repository are licensed under the [MIT License](LICENSE).
+* **Legal Disclaimer**: This project is created for educational and research purposes only. This repository **does not host or distribute** any Microsoft proprietary binaries, DLLs, or neural network models. All proprietary assets must be acquired and decrypted locally by the end-user. All trademarks and technologies remain the property of their respective owners.
+
 
