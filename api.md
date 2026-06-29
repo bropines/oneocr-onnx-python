@@ -72,6 +72,27 @@ with OneOCR() as ocr:
 
 ---
 
+### Programmatic Model Preparation API
+
+You can programmatically trigger the download, extraction, and decryption of the models directly inside your Python code using the library's built-in preparation helpers.
+
+```python
+import oneocr
+
+# 1. Run the entire preparation process sequentially (downloads, extracts, decrypts, and organizes)
+oneocr.prepare(bin_dir="my_bin", models_dir="my_models")
+
+# 2. Or call the two steps individually if you need custom handling:
+
+# Step A: Download and extract Microsoft DLLs + encrypted container from MS Store
+oneocr.download_and_extract(output_dir="my_bin", target_arch="x64")
+
+# Step B: Hook and decrypt the container, extract vocabs, and sort the models
+oneocr.decrypt_and_extract(bin_dir="my_bin", models_dir="my_models")
+```
+
+---
+
 ## 3. Data Structures
 
 The OCR results are structured into the following dataclasses:

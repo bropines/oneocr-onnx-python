@@ -1,31 +1,19 @@
 import sys
-import os
 from pathlib import Path
+from oneocr import prepare
 
 def main():
     print("=" * 80)
     print("OneOCR Automated Preparation Script")
     print("=" * 80)
     
-    # 1. Import and run download/extraction script
-    print("\n--- STEP 1: Downloading & extracting Snipping Tool OCR components ---")
     try:
-        import download_and_extract_oneocr
-        download_and_extract_oneocr.main()
+        prepare()
     except Exception as e:
-        print(f"\n[ERROR] Step 1 failed: {e}")
+        print(f"\n[ERROR] Preparation failed: {e}")
         sys.exit(1)
         
-    # 2. Import and run decryption/vocabulary extraction script
-    print("\n--- STEP 2: Decrypting ONNX models & reconstructing vocabularies ---")
-    try:
-        import extract_all
-        extract_all.main()
-    except Exception as e:
-        print(f"\n[ERROR] Step 2 failed: {e}")
-        sys.exit(1)
-        
-    # 3. Final Summary
+    # Final Summary
     base_dir = Path(__file__).parent.absolute()
     print("\n" + "=" * 80)
     print("PREPARATION SUCCESSFUL!")
