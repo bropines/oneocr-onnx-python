@@ -179,7 +179,7 @@ quad.as_rect()  # → (x, y, width, height)  axis-aligned AABB
 
 ## How the decryption works
 
-`oneocr.onemodel` is an encrypted container. The DLL decrypts it internally using a hardcoded key before loading each sub-model via ONNX Runtime's `CreateSessionFromArray` C API.
+`oneocr.onemodel` is an encrypted container. The DLL decrypts it internally using a hardcoded key before loading each sub-model via ONNX Runtime's `CreateSessionFromArray` C API. For a detailed step-by-step reverse engineering analysis of how this memory hooking and decryption works, see [WRITEUP.md](WRITEUP.md).
 
 `extract_all.py` intercepts this at runtime by:
 

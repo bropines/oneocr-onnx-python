@@ -19,7 +19,7 @@ sys.path.insert(0, str(__import__('pathlib').Path(__file__).parent.parent))
 from oneocr import OneOCR
 
 IMAGE_PATH = (sys.argv[1] if len(sys.argv) > 1
-              else r"F:\bropi\Documents\ShareX\Screenshots\2026-06\tailscale-ipn_uVzgDard51.png")
+              else r"F:\bropines\Documents\ShareX\Screenshots\2026-06\tailscale-ipn_uVzgDard51.png")
 
 print(f"Running OneOCR on: {IMAGE_PATH}\n")
 
