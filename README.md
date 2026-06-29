@@ -195,24 +195,47 @@ This technique requires no manual disassembly and works against future updates.
 
 ---
 
-## Running with Docker
+## Docker Support
 
-You can package and run the OCR engine inside a Linux container. This is highly useful for deploying to servers, Linux machines, or macOS.
+This project provides two separate Docker workflows — one for **getting the models** on any OS, and one for **running the OCR engine** anywhere.
 
-> [!IMPORTANT]
-> Since the model decryption requires Windows APIs, you must run `python prepare_files.py` on a Windows host **first** to populate the `models/` directory before building the Docker image.
+---
 
-### 1. Build the Docker Image
-Once the `models/` directory has been generated in your workspace, build the image:
+### Scenario A: Get Models on macOS / Linux (via Wine)
+
+> **No Windows machine required!** This container runs Wine internally to execute the Windows DLL decryption pipeline.
+
+#### 1. Build the preparation image
+```bash
+docker build -f Dockerfile.prepare -t oneocr-prepare .
+```
+
+#### 2. Run and extract models into your local folder
+```bash
+# macOS / Linux
+docker run --rm -v "$(pwd)/models:/output" oneocr-prepare
+
+# Windows (PowerShell)
+docker run --rm -v "${PWD}/models:/output" oneocr-prepare
+```
+
+After completion, the `models/` directory in your project root will contain all decrypted ONNX sub-models and vocabulary files — ready to use on any OS.
+
+---
+
+### Scenario B: Run the OCR Engine in a Container
+
+Once the `models/` folder is populated (from either `prepare_files.py` on Windows or Scenario A above), you can package and run the pure Python inference engine inside a standard Linux container:
+
+#### 1. Build the inference image
 ```bash
 docker build -t oneocr-onnx-python .
 ```
 
-### 2. Run the Container
-Run the default test runner on an image by passing the file path (or mount a local folder containing your images):
+#### 2. Run OCR on an image
 ```bash
-# Example: Mount local directory with screenshots to /images in container
-docker run --rm -v "/path/to/your/images:/images" oneocr-onnx-python /images/test_screenshot.png
+# Mount a local folder containing images into /images
+docker run --rm -v "/path/to/your/images:/images" oneocr-onnx-python /images/screenshot.png
 ```
 
 ---

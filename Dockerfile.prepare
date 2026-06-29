@@ -1,0 +1,61 @@
+# Dockerfile.prepare
+# Purpose: Extract and decrypt OneOCR ONNX models on macOS/Linux using Wine.
+#
+# Workflow:
+#   1. Downloads Snipping Tool package from Microsoft Store (via native Python + requests).
+#   2. Runs the decryption script inside Wine with Windows Python + Windows DLLs.
+#   3. Saves decrypted models to a mounted output directory.
+#
+# Usage:
+#   docker build -f Dockerfile.prepare -t oneocr-prepare .
+#   docker run --rm -v "$(pwd)/models:/output" oneocr-prepare
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV WINEDEBUG=-all
+ENV WINEPREFIX=/root/.wine
+ENV WINEARCH=win64
+
+# Install Wine and native Python (for download step)
+RUN dpkg --add-architecture i386 && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        wine wine64 wine32 \
+        python3 python3-pip \
+        wget curl ca-certificates \
+        xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install native Python packages needed for the download step
+RUN pip3 install --no-cache-dir requests packaging
+
+# Download and install Windows Python 3.11 inside Wine
+RUN Xvfb :0 -screen 0 1024x768x16 & \
+    export DISPLAY=:0 && \
+    wine wineboot --init && \
+    wget -q https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe -O /tmp/python-installer.exe && \
+    wine /tmp/python-installer.exe /quiet InstallAllUsers=1 PrependPath=1 && \
+    sleep 5 && \
+    rm /tmp/python-installer.exe
+
+# Install required Python packages inside Wine Python
+RUN Xvfb :0 -screen 0 1024x768x16 & \
+    export DISPLAY=:0 && \
+    wine python -m pip install --no-cache-dir \
+        onnxruntime onnx numpy pillow requests packaging
+
+WORKDIR /app
+
+# Copy project files
+COPY oneocr/ oneocr/
+COPY download_and_extract_oneocr.py .
+COPY extract_all.py .
+COPY prepare_files.py .
+COPY requirements.txt .
+
+# Copy entrypoint script
+COPY docker-prepare-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
