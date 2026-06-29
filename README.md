@@ -197,45 +197,45 @@ This technique requires no manual disassembly and works against future updates.
 
 ## Docker Support
 
-This project provides two separate Docker workflows — one for **getting the models** on any OS, and one for **running the OCR engine** anywhere.
+> [!NOTE]
+> **Windows users**: Docker is not needed at all. Run `python prepare_files.py` natively — it handles everything automatically.
+
+Docker is provided for **Linux users** who need to extract the models without a Windows machine.
 
 ---
 
-### Scenario A: Get Models on macOS / Linux (via Wine)
+### Get Models on Linux via Docker *(Experimental)*
 
-> **No Windows machine required!** This container runs Wine internally to execute the Windows DLL decryption pipeline.
+> [!WARNING]
+> This workflow uses Wine to emulate the Windows DLL decryption pipeline inside a Linux container. It is experimental and may break with future Wine or Snipping Tool updates.
 
 #### 1. Build the preparation image
 ```bash
 docker build -f Dockerfile.prepare -t oneocr-prepare .
 ```
 
-#### 2. Run and extract models into your local folder
+#### 2. Run the container and extract models into your local `models/` folder
 ```bash
-# macOS / Linux
 docker run --rm -v "$(pwd)/models:/output" oneocr-prepare
-
-# Windows (PowerShell)
-docker run --rm -v "${PWD}/models:/output" oneocr-prepare
 ```
 
-After completion, the `models/` directory in your project root will contain all decrypted ONNX sub-models and vocabulary files — ready to use on any OS.
+After completion, the `models/` directory will contain all ONNX sub-models and vocabulary files. The Docker image and cache can then be safely deleted — they are no longer needed.
+
+```bash
+# Free up disk space after extraction (~3-5 GB)
+docker rmi oneocr-prepare
+docker system prune
+```
 
 ---
 
-### Scenario B: Run the OCR Engine in a Container
+### Run the OCR Engine in a Container *(optional)*
 
-Once the `models/` folder is populated (from either `prepare_files.py` on Windows or Scenario A above), you can package and run the pure Python inference engine inside a standard Linux container:
+If you prefer a containerized inference environment (e.g. for server deployment), you can build a standard Linux image after the `models/` folder is populated:
 
-#### 1. Build the inference image
 ```bash
 docker build -t oneocr-onnx-python .
-```
-
-#### 2. Run OCR on an image
-```bash
-# Mount a local folder containing images into /images
-docker run --rm -v "/path/to/your/images:/images" oneocr-onnx-python /images/screenshot.png
+docker run --rm -v "/path/to/images:/images" oneocr-onnx-python /images/screenshot.png
 ```
 
 ---
