@@ -29,10 +29,19 @@ env/
 Thumbs.db
 desktop.ini
 
-# OneOCR: extracted models and binaries (large, machine-local)
+# OneOCR: Microsoft proprietary binaries (never commit)
 bin/
-models/
+
+# Raw temporary decryption scratch files (never commit)
+models/raw_decrypted/
 vocab_buffers/
+
+# Decrypted ONNX model weights and vocab files are large and machine-local.
+# Users must run prepare_files.py to generate them.
+# Directory structure is preserved via .gitkeep files.
+models/**/*.onnx
+models/vocab/*.txt
+
 
 # Generated test masks
 tests/mask_*.png

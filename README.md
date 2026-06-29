@@ -195,6 +195,28 @@ This technique requires no manual disassembly and works against future updates.
 
 ---
 
+## Running with Docker
+
+You can package and run the OCR engine inside a Linux container. This is highly useful for deploying to servers, Linux machines, or macOS.
+
+> [!IMPORTANT]
+> Since the model decryption requires Windows APIs, you must run `python prepare_files.py` on a Windows host **first** to populate the `models/` directory before building the Docker image.
+
+### 1. Build the Docker Image
+Once the `models/` directory has been generated in your workspace, build the image:
+```bash
+docker build -t oneocr-onnx-python .
+```
+
+### 2. Run the Container
+Run the default test runner on an image by passing the file path (or mount a local folder containing your images):
+```bash
+# Example: Mount local directory with screenshots to /images in container
+docker run --rm -v "/path/to/your/images:/images" oneocr-onnx-python /images/test_screenshot.png
+```
+
+---
+
 ## References & Prior Work
 
 - [b1tg's Research Post on Win11 OneOCR](https://b1tg.github.io/post/win11-oneocr) — Detailed reverse engineering writeup of the OneOCR DLL engine.

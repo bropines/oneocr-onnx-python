@@ -1,0 +1,16 @@
+# Gitignored files (local machine only)
+bin/
+models/raw_decrypted/
+vocab_buffers/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
