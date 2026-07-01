@@ -14,8 +14,8 @@ A clean, modular Python runtime pipeline and wrapper for the **Windows 11 Snippi
 # 1. Run the automated script to download, extract, decrypt, and organize everything:
 python prepare_files.py
 
-# 2. Run OCR on any image using the pure Python/ONNX pipeline:
-python tests/test_real_image.py path/to/screenshot.png
+# 2. Run OCR on any image using the CLI tool:
+python -m oneocr path/to/screenshot.png --lang ru
 ```
 
 For detailed documentation on configuration, hardware acceleration, and the full Python class interface, see [api.md](api.md).
@@ -127,21 +127,22 @@ OneOCR_Deobfuscated/
 
 ## Library API
 
-### `OneOCR(config_dir=None, max_lines=1000)`
+### `OneOCR(...)`
 
 Main engine class. Auto-detects `models/` or `~/.config/oneocr/`.
 
 ```python
-engine = OneOCR()                        # auto-detect
-engine = OneOCR(config_dir="path/to")   # explicit path
-engine = OneOCR(max_lines=50)            # limit output lines
+engine = OneOCR()                               # auto-detect
+engine = OneOCR(default_language="ru")          # force Russian (bypasses classifier)
+engine = OneOCR(default_rotation=0)             # force unrotated (bypasses auto-orientation)
+engine = OneOCR(max_lines=50)                   # limit output lines
 ```
 
-### `engine.recognize(image: PIL.Image) → OcrResult`
+### `engine.recognize(image: PIL.Image, language=None, rotation=None, max_side=None, score_threshold=None, link_threshold=None) → OcrResult`
 
-Run OCR on a PIL Image object (any mode, any size 50–10 000 px).
+Run OCR on a PIL Image object (any mode, any size 50–10 000 px). You can optionally override defaults on a per-call basis.
 
-### `engine.recognize_file(path) → OcrResult`
+### `engine.recognize_file(path, language=None, rotation=None, max_side=None, score_threshold=None, link_threshold=None) → OcrResult`
 
 Convenience wrapper that opens the file and calls `recognize()`.
 

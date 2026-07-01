@@ -44,6 +44,19 @@ ocr = OneOCR()
 *   `max_lines` (`int`, optional): Maximum number of text lines to process per image. Defaults to `1000`.
 *   `use_gpu` (`bool`, optional): If `True`, automatically searches for and enables available GPU/acceleration execution providers (CUDA, DirectML, ROCm) in order of preference, falling back to CPU. Defaults to `False`.
 *   `providers` (`list[str]`, optional): Explicit list of ONNX Runtime execution providers to use. Overrides `use_gpu`.
+*   `default_language` (`str`, optional): Default language code (e.g. `'ru'`, `'en'`) or script name (e.g. `'cyrillic'`, `'latin'`). Specifying this bypasses the script classifier to improve performance. Defaults to `None`.
+*   `default_rotation` (`int`, optional): Default fixed rotation angle (`0`, `90`, `180`, `270`) to skip auto-orientation. Defaults to `None`.
+*   `max_side` (`int`, optional): Resize image's longest side to this limit for detection. Defaults to `1536`.
+*   `score_threshold` (`float`, optional): Text line detection confidence threshold. Defaults to `0.5`.
+*   `link_threshold` (`float`, optional): Text line character linkage threshold. Defaults to `0.0`.
+
+#### `ocr.recognize(...)` & `ocr.recognize_file(...)` Arguments:
+You can pass the following optional parameters to override the default settings per call:
+*   `language` (`str`, optional): Specific language code or script group name. Bypasses the script classifier.
+*   `rotation` (`int`, optional): Explicit rotation angle (`0`, `90`, `180`, `270`). Bypasses orientation detection.
+*   `max_side` (`int`, optional): Overrides image resizing limit.
+*   `score_threshold` (`float`, optional): Overrides line detection confidence threshold.
+*   `link_threshold` (`float`, optional): Overrides line linkage threshold.
 
 ---
 
@@ -53,10 +66,10 @@ ocr = OneOCR()
 from oneocr import OneOCR
 from PIL import Image
 
-# 1. Initialize the engine
-with OneOCR() as ocr:
-    # 2. Perform OCR on an image file
-    result = ocr.recognize_file("screenshot.png")
+# 1. Initialize the engine with custom defaults
+with OneOCR(default_language="ru", default_rotation=0) as ocr:
+    # 2. Perform OCR on an image file overriding max_side limit
+    result = ocr.recognize_file("screenshot.png", max_side=2048)
     
     # 3. Access full extracted text
     print("--- Extracted Text ---")
@@ -70,10 +83,8 @@ with OneOCR() as ocr:
         print(f"\n[Line] '{line.text}'")
         x, y, w, h = line.bbox.as_rect()
         print(f"  Position: x={x:.0f}, y={y:.0f}, width={w:.0f}, height={h:.0f}")
-        
-        for word in line.words:
-            print(f"  - Word: '{word.text}' (confidence: {word.confidence:.3f})")
 ```
+
 
 ---
 
@@ -159,4 +170,34 @@ ocr = OneOCR(providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
 ```python
 # Requires pip install onnxruntime-openvino
 ocr = OneOCR(providers=["OpenVINOExecutionProvider", "CPUExecutionProvider"])
+```
+
+---
+
+## 5. Command Line Interface (CLI)
+
+You can run OCR directly from the command line using `python -m oneocr`.
+
+### Basic Usage
+```bash
+python -m oneocr path/to/image.png
+```
+
+### Advanced Arguments:
+*   `-l`, `--lang` / `--language`: Force specific language or script (e.g. `ru`, `en`, `cyrillic`, `latin`) to bypass classification.
+*   `-r`, `--rotation`: Force fixed rotation angle (`0`, `90`, `180`, `270`) to bypass auto-rotation estimation.
+*   `-o`, `--output`: Write OCR results to a file instead of stdout.
+*   `--gpu`: Force enable GPU acceleration.
+*   `--max-side`: Max image dimensions for detection (default: 1536).
+*   `--score-threshold`: Set custom score threshold (default: 0.5).
+*   `--link-threshold`: Set custom link threshold (default: 0.0).
+*   `--json`: Output results in full JSON format (includes word-level bounding boxes and confidences).
+
+#### Examples:
+```bash
+# Force Russian recognition on an unrotated image:
+python -m oneocr screenshot.png -l ru -r 0
+
+# Extract details in JSON format and save to out.json:
+python -m oneocr screenshot.png -l en -r 0 --json -o out.json
 ```
