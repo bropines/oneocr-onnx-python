@@ -9,9 +9,8 @@ class TextDetector:
             providers = ['CPUExecutionProvider']
         self.sess = ort.InferenceSession(str(model_path), providers=providers)
 
-    def run(self, image: Image.Image):
+    def run(self, image: Image.Image, max_side: int = 1536):
         orig_w, orig_h = image.size
-        max_side = 1536
         scale = min(max_side / max(orig_w, orig_h), 1.0)
         target_w = int(round(orig_w * scale / 32.0) * 32)
         target_h = int(round(orig_h * scale / 32.0) * 32)
@@ -27,7 +26,7 @@ class TextDetector:
         outputs = self.sess.run(None, {'data': inp, 'im_info': im_info})
         return outputs[0][0, 0], outputs[2][0, 0], outputs[4][0], outputs[5][0], target_w / orig_w, target_h / orig_h
 
-    def get_segmented_lines(self, scores, links, sx, sy):
+    def get_segmented_lines(self, scores, links, sx, sy, score_threshold: float = 0.5, link_threshold: float = 0.0):
         H_lvl, W_lvl = scores.shape
         stride = 4
         neighbors = [
@@ -39,7 +38,7 @@ class TextDetector:
         active_pixels = set()
         for r in range(H_lvl):
             for c in range(W_lvl):
-                if scores[r, c] > 0.5:
+                if scores[r, c] > score_threshold:
                     active_pixels.add((r, c))
                     
         parent = {p: p for p in active_pixels}
@@ -59,7 +58,7 @@ class TextDetector:
             for n_idx, (dy, dx) in enumerate(neighbors):
                 nr, nc = r + dy, c + dx
                 if (nr, nc) in active_pixels:
-                    if links[n_idx, r, c] > 0.0:
+                    if links[n_idx, r, c] > link_threshold:
                         union((r, c), (nr, nc))
                         
         groups = {}
@@ -89,11 +88,11 @@ class TextDetector:
         lines.sort(key=lambda item: item[1])
         return lines
 
-    def get_text_mask(self, image: Image.Image) -> Image.Image:
+    def get_text_mask(self, image: Image.Image, max_side: int = 1536, score_threshold: float = 0.5) -> Image.Image:
         """Extract a pixel-level binary text mask (0=bg, 255=text) from the FPN network."""
-        sh, sv, _, _, sx, sy = self.run(image)
+        sh, sv, _, _, sx, sy = self.run(image, max_side=max_side)
         combined = np.maximum(sh, sv)
-        mask_np = (combined > 0.5).astype(np.uint8) * 255
+        mask_np = (combined > score_threshold).astype(np.uint8) * 255
         
         # Convert to L image and scale back to original size
         mask_img = Image.fromarray(mask_np, mode="L")

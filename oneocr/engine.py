@@ -5,7 +5,7 @@ from typing import Optional
 import numpy as np
 import onnxruntime as ort
 
-from .common import SCRIPT_METADATA, Quad, Word, Line, OcrResult
+from .common import SCRIPT_METADATA, SCRIPT_BY_NAME, LANG_TO_SCRIPT, Quad, Word, Line, OcrResult
 from .vocab import Vocabulary
 from .detector import TextDetector
 from .classifier import ScriptClassifier
@@ -20,6 +20,11 @@ class OneOCR:
         max_lines: int = 1000,
         use_gpu: bool = False,
         providers: Optional[list[str]] = None,
+        default_language: Optional[str] = None,
+        default_rotation: Optional[int] = None,
+        max_side: int = 1536,
+        score_threshold: float = 0.5,
+        link_threshold: float = 0.0,
     ):
         # Resolve config/models directory path
         candidates = []
@@ -43,6 +48,11 @@ class OneOCR:
             )
             
         self.max_lines = max_lines
+        self.default_language = default_language
+        self.default_rotation = default_rotation
+        self.max_side = max_side
+        self.score_threshold = score_threshold
+        self.link_threshold = link_threshold
         
         # Configure providers
         if providers is not None:
@@ -67,10 +77,22 @@ class OneOCR:
             vocab_path = self.models_dir / "vocab" / f"vocab_{lang_name}.txt"
             self.vocabs[lang_name] = Vocabulary.load_clean(vocab_path)
             
-        # Initialize modules
+        # Initialize modules (classifier is initialized lazily)
         self.detector = TextDetector(self.models_dir / "detector" / "text_detector.onnx", providers=self.providers)
-        self.classifier = ScriptClassifier(self.models_dir / "classifier" / "script_classifier.onnx", providers=self.providers)
+        self._classifier = None
         self.recognizer = TextRecognizer(self.models_dir, self.vocabs, providers=self.providers)
+
+    @property
+    def classifier(self) -> ScriptClassifier:
+        if self._classifier is None:
+            path = self.models_dir / "classifier" / "script_classifier.onnx"
+            if not path.exists():
+                raise FileNotFoundError(
+                    f"Script classifier model not found at {path}. "
+                    "This model is required for language auto-detection and orientation correction."
+                )
+            self._classifier = ScriptClassifier(path, providers=self.providers)
+        return self._classifier
 
     def __enter__(self) -> "OneOCR":
         return self
@@ -100,25 +122,72 @@ class OneOCR:
         x4, y4 = self._map_point_back(box[6], box[7], angle, W, H)
         return [x1, y1, x2, y2, x3, y3, x4, y4]
 
-    def recognize(self, image: Image.Image) -> OcrResult:
+    def _resolve_language(self, language: str) -> tuple[str, int]:
+        lang_lower = language.lower().strip()
+        script_name = LANG_TO_SCRIPT.get(lang_lower, lang_lower)
+        if script_name not in SCRIPT_BY_NAME:
+            available = sorted(list(SCRIPT_BY_NAME.keys()))
+            raise ValueError(
+                f"Unsupported language/script: '{language}'. "
+                f"Available script groups: {available}"
+            )
+        _, vocab_size = SCRIPT_BY_NAME[script_name]
+        return script_name, vocab_size
+
+    def recognize(
+        self,
+        image: Image.Image,
+        language: Optional[str] = None,
+        rotation: Optional[int] = None,
+        max_side: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        link_threshold: Optional[float] = None,
+    ) -> OcrResult:
         if any(d < 50 or d > 10000 for d in image.size):
             raise ValueError(f"Image dimensions {image.size} out of supported range (50-10000 px).")
             
         orig_w, orig_h = image.size
-        angle = OrientationCorrector.estimate(image, self.detector, self.classifier)
         
+        # Determine rotation (explicit, default, or auto-estimate)
+        target_rotation = rotation if rotation is not None else self.default_rotation
+        if target_rotation is not None:
+            if target_rotation not in (0, 90, 180, 270):
+                raise ValueError(f"Invalid rotation angle: {target_rotation}. Must be 0, 90, 180, or 270.")
+            angle = float(target_rotation)
+        else:
+            angle = OrientationCorrector.estimate(image, self.detector, self.classifier)
+            
         upright_img = image if angle == 0.0 else image.rotate(angle, expand=True)
-        sh, sv, lh, lv, sx, sy = self.detector.run(upright_img)
+        
+        target_max_side = max_side if max_side is not None else self.max_side
+        sh, sv, lh, lv, sx, sy = self.detector.run(upright_img, max_side=target_max_side)
         
         # Auto-detect vertical vs horizontal text layout
         is_vertical = np.sum(sv > 0.5) > np.sum(sh > 0.5)
         
+        target_score_thresh = score_threshold if score_threshold is not None else self.score_threshold
+        target_link_thresh = link_threshold if link_threshold is not None else self.link_threshold
+        
         if is_vertical:
-            lines_list = self.detector.get_segmented_lines(sv, lv, sx, sy)
+            lines_list = self.detector.get_segmented_lines(
+                sv, lv, sx, sy,
+                score_threshold=target_score_thresh,
+                link_threshold=target_link_thresh
+            )
             # Sort vertical lines from right to left (standard Japanese reading order)
             lines_list.sort(key=lambda item: item[0], reverse=True)
         else:
-            lines_list = self.detector.get_segmented_lines(sh, lh, sx, sy)
+            lines_list = self.detector.get_segmented_lines(
+                sh, lh, sx, sy,
+                score_threshold=target_score_thresh,
+                link_threshold=target_link_thresh
+            )
+            
+        # Determine target language / script config if explicitly specified
+        target_lang = language if language is not None else self.default_language
+        fixed_lang_info = None
+        if target_lang is not None:
+            fixed_lang_info = self._resolve_language(target_lang)
             
         lines_out = []
         for x, y, w, h in lines_list[:self.max_lines]:
@@ -136,10 +205,13 @@ class OneOCR:
             else:
                 processed_crop = crop
                 
-            script_id, _ = self.classifier.classify(processed_crop)
-            metadata = SCRIPT_METADATA.get(script_id + 1, SCRIPT_METADATA[3])
-            lang_name = metadata["name"]
-            vocab_size = metadata["vocab_size"]
+            if fixed_lang_info is not None:
+                lang_name, vocab_size = fixed_lang_info
+            else:
+                script_id, _ = self.classifier.classify(processed_crop)
+                metadata = SCRIPT_METADATA.get(script_id + 1, SCRIPT_METADATA[3])
+                lang_name = metadata["name"]
+                vocab_size = metadata["vocab_size"]
             
             # Use raw size for CJK CTC mapping bounds
             blank_idx = vocab_size - 1
@@ -217,5 +289,20 @@ class OneOCR:
             
         return OcrResult(lines=lines_out, image_angle=float(angle))
 
-    def recognize_file(self, path: str | Path) -> OcrResult:
-        return self.recognize(Image.open(path))
+    def recognize_file(
+        self,
+        path: str | Path,
+        language: Optional[str] = None,
+        rotation: Optional[int] = None,
+        max_side: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        link_threshold: Optional[float] = None,
+    ) -> OcrResult:
+        return self.recognize(
+            Image.open(path),
+            language=language,
+            rotation=rotation,
+            max_side=max_side,
+            score_threshold=score_threshold,
+            link_threshold=link_threshold,
+        )
