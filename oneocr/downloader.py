@@ -7,6 +7,7 @@ import shutil
 from pathlib import Path
 from typing import Optional, Union
 from packaging.version import parse as parse_version
+from .common import get_default_bin_dir
 
 STORE_URL = "https://store.rg-adguard.net/api/GetFiles"
 PRODUCT_URL = "https://apps.microsoft.com/detail/9mz95kl8mr0l" # ScreenSketch (Snipping Tool)
@@ -80,11 +81,10 @@ def download_file(url: str, output_path: Union[str, Path]):
 
 def extract_oneocr_files(bundle_path: Union[str, Path], target_arch: str = "x64", output_dir: Optional[Union[str, Path]] = None) -> Path:
     if output_dir is None:
-        # Default to bin/ in the parent folder of the oneocr package root
-        package_root = Path(__file__).parent.absolute()
-        output_dir = package_root.parent / 'bin'
+        output_dir = get_default_bin_dir()
     else:
         output_dir = Path(output_dir).absolute()
+
         
     os.makedirs(output_dir, exist_ok=True)
     print(f"Extraction directory: {output_dir}")

@@ -8,21 +8,66 @@ A clean, modular Python runtime pipeline and wrapper for the **Windows 11 Snippi
 
 ---
 
-## Quick Start
+## Installation
+
+### Using `uv` (Recommended)
+
+You can run or install OneOCR directly using **[uv](https://github.com/astral-sh/uv)**:
 
 ```bash
-# 1. Run the automated script to download, extract, decrypt, and organize everything:
-python prepare_files.py
+# Run the preparation tool directly from the repository:
+uv run --with-editable . oneocr --prepare
 
-# 2. Run OCR on any image using the CLI tool:
+# Run OCR directly on an image:
+uv run --with-editable . oneocr path/to/screenshot.png --lang ru
+
+# Install globally as a command-line tool:
+uv tool install git+https://github.com/bropines/oneocr-onnx-python.git
+
+# Add as a dependency to your uv project:
+uv add git+https://github.com/bropines/oneocr-onnx-python.git
+```
+
+### Using standard `pip`
+
+```bash
+# Install as a CLI tool and library directly from GitHub:
+pip install git+https://github.com/bropines/oneocr-onnx-python.git
+
+# Or install locally in editable mode:
+pip install -e .
+```
+
+---
+
+## Quick Start
+
+### 1. Preparation (Requires Windows)
+If you have installed OneOCR, you can run the preparation process directly via the CLI:
+```bash
+oneocr --prepare
+```
+*(This queries the Microsoft Store API, downloads the Snipping Tool package, decrypts the ONNX models, and reconstructs the language vocabularies to your user config folder `~/.config/oneocr/` or local `models/` folder if running from a cloned workspace).*
+
+Alternatively, you can run the local helper script:
+```bash
+python utils/prepare_files.py
+```
+
+### 2. Run OCR on an image:
+```bash
+# Using the installed global CLI command:
+oneocr path/to/screenshot.png --lang ru
+
+# Or via python module execution:
 python -m oneocr path/to/screenshot.png --lang ru
 ```
 
-For detailed documentation on configuration, hardware acceleration, and the full Python class interface, see [api.md](api.md).
+For detailed documentation on configuration, hardware acceleration, and the full Python class interface, see [api.md](docs/api.md).
 
 > [!IMPORTANT]
 > **Platform Requirements**:
-> * **Preparation & Decryption**: The extraction and decryption step (`prepare_files.py`) utilizes Windows APIs and native DLLs, meaning it **must be run on a Windows machine**.
+> * **Preparation & Decryption**: The extraction and decryption step (`utils/prepare_files.py`) utilizes Windows APIs and native DLLs, meaning it **must be run on a Windows machine**.
 > * **OCR Engine & Inference**: Once the sub-models are extracted into the `models/` folder, they are standard platform-independent ONNX files. The core `oneocr` Python package runs on **Windows, macOS, Linux, and Docker** using only standard Python libraries and `onnxruntime`.
 
 Or use the library directly in your own code:
@@ -60,31 +105,32 @@ OneOCR_Deobfuscated/
 │   ├── recognizer.py                  ← TextRecognizer class
 │   └── corrector.py                   ← OrientationCorrector class
 │
-├── download_and_extract_oneocr.py     ← Downloads + extracts DLLs from Microsoft Store
-├── extract_all.py                     ← Automated memory patch decryptor & vocab extractor
-├── test_real_image.py                 ← Example OCR test script
+├── docker/                            ← Docker container configurations
+│   ├── Dockerfile                     ← Production inference image
+│   ├── Dockerfile.prepare             ← Model download/decryption image (via Wine)
+│   ├── .dockerignore                  ← Docker ignore patterns
+│   └── docker-prepare-entrypoint.sh   ← Wine container entrypoint script
+│
+├── docs/                              ← Documentation files
+│   ├── api.md                         ← API Reference and GPU configuration
+│   └── WRITEUP.md                     ← In-depth reverse engineering analysis
+│
+├── utils/                             ← Automated setup and inspection utilities
+│   ├── download_and_extract_oneocr.py  ← Downloads MS Store package
+│   ├── extract_all.py                 ← Memory patch decryptor
+│   ├── inspect_models.py              ← Model layout and metadata inspector
+│   └── prepare_files.py               ← Unified model decryption runner
+│
+├── tests/                             ← Test scripts and samples
+│   ├── test_robustness.py
+│   └── test_real_image.py             ← Verify inference runs properly
+│
+├── pyproject.toml                     ← PEP 621 python package configuration
+├── agents.md                          ← Agent pairing rules and guidelines
 ├── README.md                          ← This file
 │
 ├── bin/                               ← Raw DLL binaries (gitignored)
-│   ├── oneocr.dll
-│   ├── oneocr.onemodel                ← Encrypted model container
-│   └── onnxruntime.dll
-│
 └── models/                            ← Decrypted & organized ONNX sub-models
-    ├── detector/
-    │   └── text_detector.onnx         ← FPN text region detector (~11 MB)
-    ├── classifier/
-    │   └── script_classifier.onnx     ← Script/language/orientation classifier (~3.3 MB)
-    └── recognizers/                   ← 9 CTC text recognizers (named by script)
-        ├── recognizer_cjk.onnx        ← Chinese / Japanese / Korean (~12.8 MB)
-        ├── recognizer_cyrillic.onnx   ← Cyrillic + extended Latin (~2.0 MB)
-        ├── recognizer_latin.onnx      ← Extended Latin block (~6.3 MB)
-        ├── recognizer_arabic.onnx     ← (~3.3 MB)
-        ├── recognizer_devanagari.onnx ← (~3.5 MB)
-        ├── recognizer_hebrew.onnx     ← (~3.5 MB)
-        ├── recognizer_thai.onnx       ← (~3.5 MB)
-        ├── recognizer_bengali.onnx    ← (~1.7 MB)
-        └── recognizer_greek.onnx      ← (~1.9 MB)
 ```
 
 ---
@@ -183,9 +229,9 @@ quad.as_rect()  # → (x, y, width, height)  axis-aligned AABB
 
 ## How the decryption works
 
-`oneocr.onemodel` is an encrypted container. The DLL decrypts it internally using a hardcoded key before loading each sub-model via ONNX Runtime's `CreateSessionFromArray` C API. For a detailed step-by-step reverse engineering analysis of how this memory hooking and decryption works, see [WRITEUP.md](WRITEUP.md).
+`oneocr.onemodel` is an encrypted container. The DLL decrypts it internally using a hardcoded key before loading each sub-model via ONNX Runtime's `CreateSessionFromArray` C API. For a detailed step-by-step reverse engineering analysis of how this memory hooking and decryption works, see [WRITEUP.md](docs/WRITEUP.md).
 
-`extract_all.py` intercepts this at runtime by:
+`utils/extract_all.py` intercepts this at runtime by:
 
 1. Loading `onnxruntime.dll` into the Python process.
 2. Patching the API table of ONNX Runtime in-memory to hook `CreateSessionFromArray` and `Run`.
@@ -199,7 +245,7 @@ This technique requires no manual disassembly and works against future updates.
 ## Docker Support
 
 > [!NOTE]
-> **Windows users**: Docker is not needed at all. Run `python prepare_files.py` natively — it handles everything automatically.
+> **Windows users**: Docker is not needed at all. Run `python utils/prepare_files.py` natively — it handles everything automatically.
 
 Docker is provided for **Linux users** who need to extract the models without a Windows machine.
 
@@ -212,7 +258,7 @@ Docker is provided for **Linux users** who need to extract the models without a 
 
 #### 1. Build the preparation image
 ```bash
-docker build -f Dockerfile.prepare -t oneocr-prepare .
+docker build -f docker/Dockerfile.prepare -t oneocr-prepare .
 ```
 
 #### 2. Run the container and extract models into your local `models/` folder
@@ -235,7 +281,7 @@ docker system prune
 If you prefer a containerized inference environment (e.g. for server deployment), you can build a standard Linux image after the `models/` folder is populated:
 
 ```bash
-docker build -t oneocr-onnx-python .
+docker build -f docker/Dockerfile -t oneocr-onnx-python .
 docker run --rm -v "/path/to/images:/images" oneocr-onnx-python /images/screenshot.png
 ```
 

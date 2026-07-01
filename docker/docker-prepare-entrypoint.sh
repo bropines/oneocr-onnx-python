@@ -16,11 +16,11 @@ sleep 1
 echo ""
 echo "[1/2] Downloading Snipping Tool package from Microsoft Store..."
 echo "    (This step uses native Python - no Wine needed)"
-python3 download_and_extract_oneocr.py
+python3 utils/download_and_extract_oneocr.py
 
 echo ""
 echo "[2/2] Decrypting ONNX models via Windows DLL interception (Wine)..."
-wine python extract_all.py
+wine python utils/extract_all.py
 
 echo ""
 echo "Copying organized models to output directory..."

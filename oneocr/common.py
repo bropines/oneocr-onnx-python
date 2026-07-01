@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
+from pathlib import Path
+
 
 SCRIPT_METADATA = {
     1: {"name": "cjk",        "vocab_size": 32632},
@@ -88,3 +90,27 @@ class OcrResult:
     @property
     def full_text(self) -> str:
         return "\n".join(ln.text for ln in self.lines)
+
+
+def is_editable_install() -> bool:
+    package_root = Path(__file__).parent.absolute()
+    base_dir = package_root.parent
+    return (base_dir / "pyproject.toml").exists() or (base_dir / "README.md").exists()
+
+def get_default_bin_dir() -> Path:
+    if is_editable_install():
+        return Path(__file__).parent.parent.absolute() / "bin"
+    return Path.home() / ".config" / "oneocr" / "bin"
+
+def get_default_models_dir() -> Path:
+    if is_editable_install():
+        return Path(__file__).parent.parent.absolute() / "models"
+    return Path.home() / ".config" / "oneocr" / "models"
+
+def get_default_buffers_dir() -> Path:
+    if is_editable_install():
+        return Path(__file__).parent.parent.absolute() / "vocab_buffers"
+    return Path.home() / ".config" / "oneocr" / "vocab_buffers"
+
+
+

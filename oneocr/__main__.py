@@ -8,7 +8,12 @@ def main():
     parser = argparse.ArgumentParser(
         description="OneOCR CLI: A command-line tool for running the Microsoft Snipping Tool OCR engine locally."
     )
-    parser.add_argument("image_path", type=str, help="Path to the input image file.")
+    parser.add_argument("image_path", type=str, nargs="?", help="Path to the input image file.")
+    parser.add_argument(
+        "--prepare",
+        action="store_true",
+        help="Download, extract, and decrypt models automatically (requires Windows)."
+    )
     parser.add_argument(
         "-l", "--lang", "--language",
         type=str,
@@ -59,6 +64,19 @@ def main():
     
     args = parser.parse_args()
     
+    if args.prepare:
+        from . import prepare
+        try:
+            prepare()
+            sys.exit(0)
+        except Exception as e:
+            print(f"Preparation error: {e}", file=sys.stderr)
+            sys.exit(1)
+            
+    if not args.image_path:
+        parser.print_help()
+        sys.exit(1)
+        
     image_path = Path(args.image_path)
     if not image_path.exists():
         print(f"Error: Image file not found: {args.image_path}", file=sys.stderr)

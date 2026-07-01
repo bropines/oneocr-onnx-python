@@ -23,7 +23,7 @@ except ImportError:
     import onnx
     import onnxruntime as ort
 
-MODELS_DIR = Path(__file__).parent / "models"
+MODELS_DIR = Path(__file__).parent.parent / "models"
 
 def fmt_shape(shape) -> str:
     return "[" + ", ".join(str(d.dim_value) if d.dim_value else d.dim_param or "?"

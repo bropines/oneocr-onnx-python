@@ -7,6 +7,8 @@ import time
 from ctypes import Structure, byref, POINTER, c_int64, c_int32, c_float, c_ubyte, c_char_p, c_void_p, c_size_t
 from pathlib import Path
 from typing import Optional, Union
+from .common import get_default_bin_dir, get_default_models_dir, get_default_buffers_dir
+
 
 # Global hook references
 global_references = {}
@@ -52,22 +54,20 @@ def decrypt_and_extract(bin_dir: Optional[Union[str, Path]] = None, models_dir: 
     global get_tensor_mutable_data_fn, get_tensor_type_and_shape_fn, get_dimensions_count_fn, get_dimensions_fn, release_tensor_type_and_shape_info_fn
     
     # 1. Setup paths
-    package_root = Path(__file__).parent.absolute()
-    base_dir = package_root.parent
-    
     if bin_dir is None:
-        bin_dir = base_dir / "bin"
+        bin_dir = get_default_bin_dir()
     else:
         bin_dir = Path(bin_dir).absolute()
         
     if models_dir is None:
-        models_dir = base_dir / "models"
+        models_dir = get_default_models_dir()
     else:
         models_dir = Path(models_dir).absolute()
         
     vocab_dir = models_dir / "vocab"
-    buffers_dir = base_dir / "vocab_buffers"
+    buffers_dir = get_default_buffers_dir()
     raw_dir = models_dir / "raw_decrypted"
+
     
     # Force UTF-8 stdout
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')

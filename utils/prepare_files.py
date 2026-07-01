@@ -14,7 +14,7 @@ def main():
         sys.exit(1)
         
     # Final Summary
-    base_dir = Path(__file__).parent.absolute()
+    base_dir = Path(__file__).parent.parent.absolute()
     print("\n" + "=" * 80)
     print("PREPARATION SUCCESSFUL!")
     print("=" * 80)

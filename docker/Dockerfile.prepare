@@ -49,9 +49,9 @@ WORKDIR /app
 
 # Copy project files
 COPY oneocr/ oneocr/
-COPY download_and_extract_oneocr.py .
-COPY extract_all.py .
-COPY prepare_files.py .
+COPY utils/download_and_extract_oneocr.py utils/
+COPY utils/extract_all.py utils/
+COPY utils/prepare_files.py utils/
 COPY requirements.txt .
 
 # Copy entrypoint script
